@@ -12,7 +12,7 @@ const DashboardPage = ({ uid }) => {
   const axiosWithAuth = () => {
     const token = localStorage.getItem('authToken');
     return axios.create({
-      baseURL: 'https://link-shrinker-backend.onrender.com',
+      baseURL: 'https://shrinkoo.onrender.com',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -109,12 +109,12 @@ const DashboardPage = ({ uid }) => {
 
                   <h3>Shortened URL:</h3>
                   <a 
-                    href={`https://link-shrinker-backend.onrender.com/${url.shortId}`} 
+                    href={`https://shrinkoo.onrender.com/${url.shortId}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="short-url"
                   >
-                    {`https://link-shrinker-backend.onrender.com/${url.shortId}`}
+                    {`https://shrinkoo.onrender.com/${url.shortId}`}
                   </a>
 
                   <p className="click-count">Clicks: {url.clicks}</p>
