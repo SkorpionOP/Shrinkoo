@@ -13,7 +13,7 @@ const HomePage = ({ uid }) => {
     // Get token from localStorage if available
     const token = localStorage.getItem('authToken');
 return axios.create({
-  baseURL: 'https://link-shrinker-backend.onrender.com', // Fix: close the string properly
+  baseURL: 'https://shrinkoo.onrender.com', // Fix: close the string properly
   headers: {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`
