@@ -5,7 +5,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer
 } from "recharts";
 import {
-  Link as LinkIcon, Users, Clock, Smartphone, Globe, RefreshCw, 
+  Link as LinkIcon, Users, Clock, Smartphone, Globe, RefreshCw,
   MapPin, AlertCircle, Loader2, Trash2, ExternalLink
 } from "lucide-react"
 
@@ -25,7 +25,7 @@ const axiosWithAuth = () => {
   });
 };
 
-// Custom styles
+// Custom styles (keep as is)
 const styles = {
   container: "home-container",
   errorMessage: "error-message",
@@ -60,44 +60,75 @@ const styles = {
   select: "px-4 py-2 border rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 };
 
-// Fallback data for multiple links
+// Fallback data for multiple links (updated to match new backend structure)
 const FALLBACK_DATA = [
   {
-    _id: "fallback1",
-    originalUrl: "https://example.com/original-url",
-    shortId: "demo1",
-    clicks: 1284,
-    createdAt: new Date().toISOString(),
-    logs: Array.from({ length: 30 }, (_, i) => ({
-      _id: `fallback1-${i}`,
+    url: {
+      _id: "fallback1",
+      originalUrl: "https://example.com/original-url",
       shortId: "demo1",
-      ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-      country: "Unknown",
-      device: ["mobile", "desktop"][Math.floor(Math.random() * 2)],
-      timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-    }))
+      totalClicks: 1284, // Changed from 'clicks' to 'totalClicks'
+      createdAt: new Date().toISOString(),
+    },
+    analytics: { // New nested structure
+      totalLogs: 30,
+      countryStats: { US: 20, CA: 10 },
+      deviceStats: { Mobile: 15, Desktop: 15 },
+      browserStats: { Chrome: 20, Firefox: 10 },
+      dailyStats: {
+        [new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]]: 5,
+        [new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]]: 10,
+        [new Date().toISOString().split('T')[0]]: 15
+      },
+      recentClicks: Array.from({ length: 10 }, (_, i) => ({ // Top 10 recent logs
+        _id: `fallback1-${i}`,
+        shortId: "demo1",
+        ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+        country: ["US", "CA"][Math.floor(Math.random() * 2)],
+        city: "Unknown",
+        device: ["Mobile", "Desktop"][Math.floor(Math.random() * 2)],
+        browser: ["Chrome", "Firefox"][Math.floor(Math.random() * 2)],
+        os: ["Windows", "Mac"][Math.floor(Math.random() * 2)],
+        timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
+      }))
+    }
   },
   {
-    _id: "fallback2",
-    originalUrl: "https://another-example.com",
-    shortId: "demo2",
-    clicks: 567,
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    logs: Array.from({ length: 20 }, (_, i) => ({
-      _id: `fallback2-${i}`,
+    url: {
+      _id: "fallback2",
+      originalUrl: "https://another-example.com",
       shortId: "demo2",
-      ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-      country: "Unknown",
-      device: ["mobile", "desktop"][Math.floor(Math.random() * 2)],
-      timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-    }))
+      totalClicks: 567,
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    analytics: {
+      totalLogs: 20,
+      countryStats: { DE: 15, FR: 5 },
+      deviceStats: { Tablet: 5, Desktop: 15 },
+      browserStats: { Safari: 10, Edge: 10 },
+      dailyStats: {
+        [new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]]: 8,
+        [new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]]: 12,
+      },
+      recentClicks: Array.from({ length: 5 }, (_, i) => ({
+        _id: `fallback2-${i}`,
+        shortId: "demo2",
+        ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+        country: ["DE", "FR"][Math.floor(Math.random() * 2)],
+        city: "Unknown",
+        device: ["Tablet", "Desktop"][Math.floor(Math.random() * 2)],
+        browser: ["Safari", "Edge"][Math.floor(Math.random() * 2)],
+        os: ["Android", "iOS"][Math.floor(Math.random() * 2)],
+        timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
+      }))
+    }
   }
 ];
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 const UrlAnalytics = ({ uid }) => {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState([]); // This will now hold an array of objects like { url: {...}, analytics: {...} }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteStatus, setDeleteStatus] = useState('');
@@ -117,34 +148,47 @@ const UrlAnalytics = ({ uid }) => {
       setError('');
       setUsingFallback(false);
 
-      // Debug: Log uid and token
       const token = localStorage.getItem('authToken');
       console.log('Fetching data with:', { uid, token });
 
       try {
-        // Fetch list of user links
+        // Fetch list of user links (from /api/urls/user/links/:uid)
         const linksRes = await axiosWithAuth().get(`/api/urls/user/links/${uid}`);
-        console.log('Links response:', linksRes.data);
+        console.log('Links response (from /user/links):', linksRes.data);
 
         if (Array.isArray(linksRes.data) && linksRes.data.length > 0) {
-          // Fetch analytics for each link
+          // Fetch analytics for each link (from /api/urls/analytics/:shortId)
           const analyticsPromises = linksRes.data.map(link =>
             axiosWithAuth().get(`/api/urls/analytics/${link.shortId}`)
               .catch(err => {
                 console.error(`Analytics error for ${link.shortId}:`, err);
-                return { data: { shortId: link.shortId, logs: [] } }; // Fallback for failed analytics
+                // Return a structure that matches the successful response, even if empty
+                return {
+                  data: {
+                    url: link, // Use the link info we already have
+                    analytics: {
+                      totalLogs: 0,
+                      countryStats: {},
+                      deviceStats: {},
+                      browserStats: {},
+                      dailyStats: {},
+                      recentClicks: []
+                    }
+                  }
+                };
               })
           );
           const analyticsResponses = await Promise.all(analyticsPromises);
-          const analyticsData = analyticsResponses.map(res => res.data);
-          console.log('Analytics data:', analyticsData);
-          setData(analyticsData);
+          // The response for each analytics call is already in the desired format: { url: {}, analytics: {} }
+          const combinedData = analyticsResponses.map(res => res.data);
+          console.log('Combined Analytics Data (after individual calls):', combinedData);
+          setData(combinedData);
           return;
         } else {
           setError("No links found. Create some links to see analytics.");
         }
       } catch (apiError) {
-        console.error('API error:', apiError);
+        console.error('API error (fetching links or analytics):', apiError);
         if (retryCount > 0) {
           console.warn(`Retrying API call (${retryCount} attempts left)...`);
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -158,10 +202,11 @@ const UrlAnalytics = ({ uid }) => {
         }
       }
 
+      // If API calls fail after retries, use fallback data
       setData(FALLBACK_DATA);
       setUsingFallback(true);
     } catch (err) {
-      console.error("Fetch error:", err);
+      console.error("General fetch error:", err);
       setError(err.message || "Failed to fetch analytics data.");
       setData(FALLBACK_DATA);
       setUsingFallback(true);
@@ -175,8 +220,9 @@ const UrlAnalytics = ({ uid }) => {
     setDeleteStatus(`Deleting URL...`);
 
     try {
-      await axiosWithAuth().delete(`/urls/${shortId}`);
-      setData(prev => prev.filter(url => url.shortId !== shortId));
+      // The delete endpoint is now `/:shortId` directly under `/api/urls`
+      await axiosWithAuth().delete(`/api/urls/${shortId}`); // Changed URL
+      setData(prev => prev.filter(item => item.url.shortId !== shortId)); // Adjust filter
       setDeleteStatus('URL deleted successfully');
       setTimeout(() => setDeleteStatus(''), 3000);
     } catch (err) {
@@ -200,81 +246,94 @@ const UrlAnalytics = ({ uid }) => {
   }, [uid]);
 
   const processAnalytics = () => {
-    if (!data || !Array.isArray(data)) return null;
+    if (!data || !Array.isArray(data) || data.length === 0) return null;
 
     // Filter data based on selected link
     const filteredData = selectedLink === "all"
       ? data
-      : data.filter(link => link.shortId === selectedLink);
+      : data.filter(item => item.url.shortId === selectedLink);
 
     if (filteredData.length === 0) return null;
 
-    // Aggregate logs
-    const allLogs = filteredData.flatMap(link => link.logs || []);
-    const originalUrl = selectedLink === "all"
-      ? "All Links"
-      : filteredData[0].originalUrl;
+    let totalClicks = 0;
+    let uniqueVisitors = new Set();
+    const countryStats = {};
+    const deviceStats = {};
+    const browserStats = {};
+    const dailyStats = {};
+    const recentClicks = []; // This will hold the aggregated recent clicks
 
-    // Device distribution
-    const deviceData = allLogs.reduce((acc, log) => {
-      const device = log.device ? log.device.toLowerCase() : 'unknown';
-      const normalizedDevice = 
-        device.includes('mobile') ? 'Mobile' :
-        device.includes('desktop') ? 'Desktop' :
-        'Other';
-      
-      acc[normalizedDevice] = (acc[normalizedDevice] || 0) + 1;
-      return acc;
-    }, {});
+    filteredData.forEach(item => {
+      totalClicks += (item.url.totalClicks || 0); // Use url.totalClicks
+      // Aggregate detailed analytics from each item's analytics object
+      if (item.analytics) {
+        // Aggregate country stats
+        for (const country in item.analytics.countryStats) {
+          countryStats[country] = (countryStats[country] || 0) + item.analytics.countryStats[country];
+        }
+        // Aggregate device stats
+        for (const device in item.analytics.deviceStats) {
+          deviceStats[device] = (deviceStats[device] || 0) + item.analytics.deviceStats[device];
+        }
+        // Aggregate browser stats
+        for (const browser in item.analytics.browserStats) {
+          browserStats[browser] = (browserStats[browser] || 0) + item.analytics.browserStats[browser];
+        }
+        // Aggregate daily stats
+        for (const date in item.analytics.dailyStats) {
+          dailyStats[date] = (dailyStats[date] || 0) + item.analytics.dailyStats[date];
+        }
+        // Aggregate recent clicks
+        recentClicks.push(...item.analytics.recentClicks);
+        // Collect unique IPs for unique visitors
+        item.analytics.recentClicks.forEach(log => uniqueVisitors.add(log.ip));
+      }
+    });
 
-    // Time distribution (last 7 days)
+    // Sort recentClicks by timestamp descending and take the top 10/whatever
+    recentClicks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const aggregatedRecentClicks = recentClicks.slice(0, 10); // Show top 10 overall recent clicks
+
+    // Format dailyStats for Recharts BarChart (last 7 days logic)
     const now = new Date();
     const timeData = Array.from({ length: 7 }, (_, i) => {
       const date = new Date(now);
       date.setDate(date.getDate() - (6 - i));
-      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      
+      const dateStr = date.toISOString().split('T')[0]; // Format to YYYY-MM-DD for key matching
+      const displayDateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
       return {
-        date: dateStr,
-        clicks: allLogs.filter(log => {
-          const logDate = new Date(log.timestamp);
-          return (
-            logDate.getDate() === date.getDate() &&
-            logDate.getMonth() === date.getMonth() &&
-            logDate.getFullYear() === date.getFullYear()
-          );
-        }).length
+        date: displayDateStr,
+        clicks: dailyStats[dateStr] || 0 // Get clicks from aggregated dailyStats
       };
     });
 
-    // Country distribution
-    const countryData = allLogs.reduce((acc, log) => {
-      const country = log.country || 'Unknown';
-      acc[country] = (acc[country] || 0) + 1;
-      return acc;
-    }, {});
-
-    const sortedCountries = Object.entries(countryData)
+    // Sort and slice country data
+    const sortedCountries = Object.entries(countryStats)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([name, value]) => ({ name, value }));
 
     return {
-      originalUrl,
-      totalClicks: filteredData.reduce((sum, link) => sum + (link.clicks || 0), 0),
-      uniqueVisitors: new Set(allLogs.map(log => log.ip)).size,
+      originalUrl: selectedLink === "all" ? "All Links" : filteredData[0].url.originalUrl,
+      shortId: selectedLink === "all" ? "all" : filteredData[0].url.shortId,
+      totalClicks,
+      uniqueVisitors: uniqueVisitors.size,
       createdAt: selectedLink === "all"
         ? "Multiple Dates"
-        : new Date(filteredData[0].createdAt).toLocaleDateString(),
-      deviceData: Object.entries(deviceData).map(([name, value]) => ({ name, value })),
+        : new Date(filteredData[0].url.createdAt).toLocaleDateString(),
+      deviceData: Object.entries(deviceStats).map(([name, value]) => ({ name, value })),
       timeData,
       countryData: sortedCountries,
       usingFallback,
-      logs: allLogs
+      logs: aggregatedRecentClicks // Use the aggregated recent clicks
     };
   };
 
   const analytics = processAnalytics();
+
+  // Helper to get short URL (for display in table)
+  const getShortUrl = (shortId) => `https://shrinkoo.onrender.com/api/urls/${shortId}`;
 
   return (
     <div className="analytics-container">
@@ -304,7 +363,7 @@ const UrlAnalytics = ({ uid }) => {
           {analytics.usingFallback && (
             <div className="analytics-alert">
               <AlertCircle />
-              <span>Showing demo data. The analytics API is currently unavailable.</span>
+              <span>Showing demo data. The analytics API is currently unavailable or returned no data.</span>
             </div>
           )}
 
@@ -313,15 +372,18 @@ const UrlAnalytics = ({ uid }) => {
               <h2>
                 <LinkIcon className="text-blue-500" /> Analytics Overview
               </h2>
-              
+
               <select
                 value={selectedLink}
                 onChange={(e) => setSelectedLink(e.target.value)}
+                className={styles.select} // Apply select styling
               >
                 <option value="all">All Links</option>
-                {data.map(link => (
-                  <option key={link.shortId} value={link.shortId}>
-                    {link.originalUrl} ({link.shortId})
+                {data.map(item => (
+                  <option key={item.url.shortId} value={item.url.shortId}>
+                    {item.url.originalUrl.length > 40
+                      ? `${item.url.originalUrl.substring(0, 40)}...`
+                      : item.url.originalUrl} ({item.url.shortId})
                   </option>
                 ))}
               </select>
@@ -368,7 +430,7 @@ const UrlAnalytics = ({ uid }) => {
               </div>
               <div>
                 <p className="metric-label">Countries</p>
-                <p className="metric-value">{analytics.countryData.length}</p>
+                <p className="metric-value">{Object.keys(analytics.countryData).length}</p> {/* Use actual count of keys */}
               </div>
             </div>
           </div>
@@ -431,16 +493,22 @@ const UrlAnalytics = ({ uid }) => {
                   <tr>
                     <th>Time</th>
                     <th>Country</th>
+                    <th>City</th> {/* Added City */}
                     <th>Device</th>
+                    <th>Browser</th> {/* Added Browser */}
+                    <th>OS</th> {/* Added OS */}
                     <th>Short ID</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {analytics.logs.slice(0, 5).map((log, index) => (
+                  {analytics.logs.map((log, index) => (
                     <tr key={index}>
                       <td>{new Date(log.timestamp).toLocaleString()}</td>
                       <td>{log.country || 'Unknown'}</td>
+                      <td>{log.city || 'Unknown'}</td> {/* Display City */}
                       <td className="capitalize">{log.device || 'Unknown'}</td>
+                      <td>{log.browser || 'Unknown'}</td> {/* Display Browser */}
+                      <td>{log.os || 'Unknown'}</td> {/* Display OS */}
                       <td>{log.shortId}</td>
                     </tr>
                   ))}
@@ -460,35 +528,43 @@ const UrlAnalytics = ({ uid }) => {
                   <tr>
                     <th>Short ID</th>
                     <th>Original URL</th>
-                    <th>Clicks</th>
+                    <th>Clicks (Actual)</th> {/* Changed label */}
                     <th>Created</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.map((link, index) => (
+                  {data.map((item, index) => ( // Iterate through `data` directly
                     <tr key={index}>
-                      <td>{link.shortId}</td>
+                      <td>{item.url.shortId}</td>
                       <td className="url-cell">
-                        <a 
-                          href={link.originalUrl} 
-                          target="_blank" 
+                        <a
+                          href={item.url.originalUrl}
+                          target="_blank"
                           rel="noopener noreferrer"
                         >
-                          {link.originalUrl.length > 40 
-                            ? `${link.originalUrl.substring(0, 40)}...` 
-                            : link.originalUrl}
+                          {item.url.originalUrl.length > 40
+                            ? `${item.url.originalUrl.substring(0, 40)}...`
+                            : item.url.originalUrl}
                           <ExternalLink size={14} />
                         </a>
                       </td>
-                      <td>{link.clicks}</td>
-                      <td>{new Date(link.createdAt).toLocaleDateString()}</td>
+                      <td>{item.url.totalClicks}</td> {/* Use item.url.totalClicks */}
+                      <td>{new Date(item.url.createdAt).toLocaleDateString()}</td>
                       <td>
-                        <button 
-                          onClick={() => handleDelete(link.shortId)}
+                        <button
+                          onClick={() => handleDelete(item.url.shortId)}
                           className="delete-btn"
                         >
                           <Trash2 size={16} />
+                        </button>
+                        {/* Add copy short URL button */}
+                        <button
+                          onClick={() => navigator.clipboard.writeText(getShortUrl(item.url.shortId))}
+                          className="copy-btn ml-2" // Add some margin
+                          title="Copy Short URL"
+                        >
+                          <LinkIcon size={16} />
                         </button>
                       </td>
                     </tr>
