@@ -46,7 +46,6 @@ const urlSchema = new mongoose.Schema({
 // But generally, `unique: true` on the field is simpler for simple unique indexes.
 
 // Optional: Add index for frequently queried fields (only for createdBy now)
-urlSchema.index({ createdBy: 1 }); // Helps with user-specific queries
 
 // Ensure Url model is only defined once (similar to ClickLog)
 const Url = mongoose.models.Url || mongoose.model('Url', urlSchema);
