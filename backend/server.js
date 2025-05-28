@@ -12,8 +12,7 @@ const PORT = process.env.PORT || 5000;
 
 // CORS setup to allow only specific frontend origin (replace with your frontend URL)
 const allowedOrigins = [
-  'https://link-shrinker-frontend.vercel.app',
-  'http://localhost:3000',// Replace with your actual frontend URL
+  'https://shrinkoo.vercel.app'
 ];
 
 const corsOptions = {
