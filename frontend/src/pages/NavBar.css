@@ -1,0 +1,195 @@
+/* General resets to ensure consistent styling, especially for initial values */
+* {
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif; /* Apply Inter font for a modern look */
+}
+
+/* Base Navbar container styles */
+.navbar {
+  display: flex;
+  justify-content: space-between; /* Ensures brand is on left, menu/button on right */
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #201c33; /* Dark background from your old CSS */
+  color: white;
+  position: sticky; /* Makes the navbar stick to the top */
+  top: 0;
+  z-index: 50; /* Ensures it stays on top of other content */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+/* Navbar brand/logo styling */
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: bold;
+  display: flex; /* To align icon and text if used */
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navbar-logo {
+  color: #6c47ff; /* Purple color for the logo */
+  text-decoration: none;
+  /* Removed redundant display/align/gap as it's now on navbar-brand */
+}
+
+/* Desktop Menu styles */
+.navbar-menu {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  transition: all 0.3s ease-in-out; /* Smooth transition for mobile menu */
+}
+
+.navbar-item {
+  margin-left: 1.5rem; /* Spacing between desktop menu items */
+}
+
+/* Styling for individual navigation links */
+.navbar-link {
+  color: white;
+  text-decoration: none;
+  position: relative; /* For the active indicator */
+  padding: 0.5rem 1rem; /* Added horizontal padding for better touch targets */
+  border-radius: 0.375rem; /* Rounded corners for links */
+  transition: all 0.2s ease; /* Smooth hover effects */
+  display: flex; /* To align icon and text */
+  align-items: center;
+  gap: 0.5rem; /* Space between icon and text */
+}
+
+.navbar-link:hover {
+  color: #9683ec; /* Lighter purple on hover */
+  background-color: rgba(108, 71, 255, 0.1); /* Subtle background on hover */
+  transform: translateY(-1px); /* Slight lift effect */
+}
+
+/* Active link indicator */
+.navbar-link.active {
+  color: #6c47ff; /* Active link color */
+  font-weight: 600;
+  background-color: rgba(108, 71, 255, 0.15); /* Slightly darker background for active state */
+}
+
+.navbar-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 10%;
+  width: 80%;
+  height: 2px;
+  background: linear-gradient(to right, #6c47ff, #9683ec); /* Gradient underline */
+  border-radius: 2px;
+}
+
+/* Logout button specific styles */
+.logout-button {
+  background: none;
+  border: 1.5px solid #6c47ff; /* Border from your old CSS */
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  color: #6c47ff; /* Text color matching brand */
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logout-button:hover {
+  background: linear-gradient(to right, #6c47ff, #9683ec); /* Gradient background on hover */
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Mobile menu button (hamburger/close icon) */
+.mobile-menu-button {
+  display: none; /* Hidden by default on desktop */
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem; /* Larger icon for touch */
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+  z-index: 60; /* Ensure it's above other elements in the navbar */
+}
+
+.mobile-menu-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile Menu (initially hidden) */
+.mobile-nav-menu {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background-color: #201c33; /* Same background as navbar */
+  position: absolute; /* Overlay content */
+  top: 4rem; /* Position below the main navbar (assuming navbar height is ~4rem) */
+  left: 0;
+  width: 100%;
+  max-height: 0; /* Hidden state */
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  opacity: 0;
+  visibility: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 45; /* Ensure it's below the main navbar but above content */
+}
+
+.mobile-nav-menu.open {
+  max-height: max-content; /* Changed from 500px to allow full expansion */
+  opacity: 1;
+  visibility: visible;
+}
+
+.mobile-nav-item {
+  padding: 0.75rem 2rem; /* Padding for mobile menu items */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Separator */
+}
+
+.mobile-nav-item:last-child {
+  border-bottom: none;
+}
+
+.mobile-nav-link {
+  color: white;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-link:hover {
+  color: #9683ec;
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+  .navbar-menu {
+    display: none; /* Hide desktop menu on small screens */
+  }
+
+  .mobile-menu-button {
+    display: block; /* Show mobile menu button on small screens */
+  }
+}
+
+/* Focus-visible styles for accessibility */
+.navbar-link:focus-visible,
+.logout-button:focus-visible,
+.mobile-menu-button:focus-visible,
+.navbar-logo:focus-visible,
+.mobile-nav-link:focus-visible {
+  outline: 2px solid #6c47ff; /* Focus outline color */
+  outline-offset: 2px;
+  border-radius: 0.375rem; /* Match element's border-radius */
+}
