@@ -1,36 +1,37 @@
 const mongoose = require('mongoose');
-const validator = require('validator'); // for URL validation
+const validator = require('validator');
 
 const urlSchema = new mongoose.Schema({
   originalUrl: {
     type: String,
     required: true,
     validate: {
-      validator: (value) => validator.isURL(value),  // Validate that it's a valid URL
-      message: 'Invalid URL format'  // Error message for invalid URL format
+      validator: (value) => validator.isURL(value),
+      message: 'Invalid URL format'
     }
   },
   shortId: {
     type: String,
     required: true,
-    unique: true  // This automatically creates an index on the shortId
+    unique: true
   },
   clicks: {
     type: Number,
     default: 0
   },
   createdBy: {
-    type: String, // Firebase UID or email
+    type: String,
     required: false
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
+    expires: '7d' // Auto-delete after 7 days (604800 seconds)
   }
 });
 
-// Remove the explicit index declaration for shortId
-// urlSchema.index({ shortId: 1 });  // No longer needed
+// Optional: Add index for frequently queried fields
+urlSchema.index({ shortId: 1 }); // Helps with short URL lookups
+urlSchema.index({ createdBy: 1 }); // Helps with user-specific queries
 
 module.exports = mongoose.model('Url', urlSchema);
-
