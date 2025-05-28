@@ -108,13 +108,13 @@ const handleDelete = async (shortId) => {
                   
                   <h3>Shortened URL:</h3>
                   <a 
-                    href={`https://link-shrinker-backend.onrender.com
+                    href={`https://shrinkoo.onrender.com
 /${url.shortId}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="short-url"
                   >
-                    {`https://link-shrinker-backend.onrender.com
+                    {`https://shrinkoo.onrender.com
 /${url.shortId}`}
                   </a>
                   
