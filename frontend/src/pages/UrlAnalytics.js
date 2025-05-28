@@ -17,7 +17,7 @@ import "./modern.css";
 const axiosWithAuth = () => {
   const token = localStorage.getItem('authToken');
   return axios.create({
-    baseURL: 'https://link-shrinker-backend.onrender.com',
+    baseURL: 'https://shrinkoo.onrender.com',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
