@@ -7,6 +7,7 @@ const DashboardPage = ({ uid }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [deleteStatus, setDeleteStatus] = useState('');
+  const [copiedStatus, setCopiedStatus] = useState({}); // State to track copy status for each URL
   const isGuest = uid === 'guest';
 
   const axiosWithAuth = () => {
@@ -51,7 +52,7 @@ const DashboardPage = ({ uid }) => {
 
     setError('');
     setDeleteStatus(`Deleting URL...`);
-    
+
     try {
       await axiosWithAuth().delete(`/urls/${shortId}`);
       setUserUrls(prev => prev.filter(url => url.shortId !== shortId));
@@ -70,6 +71,22 @@ const DashboardPage = ({ uid }) => {
       }
       setError(errorMsg);
       setDeleteStatus('');
+    }
+  };
+
+  const handleCopy = async (shortUrl, shortId) => {
+    try {
+      await navigator.clipboard.writeText(shortUrl);
+      setCopiedStatus(prev => ({ ...prev, [shortId]: 'Copied!' }));
+      setTimeout(() => {
+        setCopiedStatus(prev => ({ ...prev, [shortId]: '' }));
+      }, 2000); // Message disappears after 2 seconds
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+      setCopiedStatus(prev => ({ ...prev, [shortId]: 'Failed to copy!' }));
+      setTimeout(() => {
+        setCopiedStatus(prev => ({ ...prev, [shortId]: '' }));
+      }, 2000);
     }
   };
 
@@ -94,45 +111,60 @@ const DashboardPage = ({ uid }) => {
       ) : (
         <div className="url-list">
           <ul>
-            {userUrls.map((url) => (
-              <li key={url.shortId} className="url-item">
-                <div className="url-info">
-                  <h3>Original URL:</h3>
-                  <a
-                    href={url.originalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="original-url"
-                  >
-                    {url.originalUrl}
-                  </a>
-
-                  <h3>Shortened URL:</h3>
-                  <a 
-                    href={`https://shrinkoo.onrender.com/${url.shortId}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="short-url"
-                  >
-                    {`https://shrinkoo.onrender.com/${url.shortId}`}
-                  </a>
-
-                  <p className="click-count">Clicks: {url.clicks}</p>
-                </div>
-
-                {!isGuest && (
-                  <div className="url-actions">
-                    <button 
-                      onClick={() => handleDelete(url.shortId)} 
-                      className="delete-button"
-                      aria-label={`Delete shortened URL for ${url.originalUrl}`}
+            {userUrls.map((url) => {
+              const fullShortUrl = `https://shrinkoo.onrender.com/${url.shortId}`;
+              return (
+                <li key={url.shortId} className="url-item">
+                  <div className="url-info">
+                    <h3>Original URL:</h3>
+                    <a
+                      href={url.originalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="original-url"
                     >
-                      Delete
-                    </button>
+                      {url.originalUrl}
+                    </a>
+
+                    <h3>Shortened URL:</h3>
+                    <div className="short-url-container"> {/* New container for URL and button */}
+                      <a
+                        href={fullShortUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="short-url"
+                      >
+                        {fullShortUrl}
+                      </a>
+                      <button
+                        onClick={() => handleCopy(fullShortUrl, url.shortId)}
+                        className="copy-button"
+                        title="Copy to clipboard"
+                      >
+                        {copiedStatus[url.shortId] === 'Copied!' ? '✅' : '📋'} {/* Checkmark or clipboard icon */}
+                      </button>
+                      {copiedStatus[url.shortId] && copiedStatus[url.shortId] !== 'Copied!' && (
+                        <span className="copy-feedback">{copiedStatus[url.shortId]}</span>
+                      )}
+                    </div>
+
+                    <p className="click-count">Clicks: {url.clicks}</p>
                   </div>
-                )}
-              </li>
-            ))}
+
+                  {!isGuest && (
+                    <div className="url-actions">
+                      <button
+                        onClick={() => handleDelete(url.shortId)}
+                        className="delete-button"
+                        aria-label={`Delete shortened URL for ${url.originalUrl}`}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
