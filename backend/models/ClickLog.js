@@ -9,38 +9,43 @@ const clickLogSchema = new mongoose.Schema({
   },
   ip: {
     type: String,
-    required: true,
-    trim: true
+    required: false, // <--- CHANGE THIS: IP might be 'Unknown' or not available
+    trim: true,
+    default: 'Unknown' // Add a default for safety
   },
   country: {
     type: String,
-    required: true,
-    trim: true
+    required: false, // <--- CHANGE THIS: Country might be 'Unknown'
+    trim: true,
+    default: 'Unknown' // Add a default for safety
   },
-  city: { // Added city as per your urlRoutes.js usage
+  city: {
     type: String,
     trim: true,
-    default: 'Unknown'
+    default: 'Unknown' // Already good, but ensures it's always set
   },
   device: {
     type: String,
-    required: true,
-    trim: true
-  },
-  browser: { // Added browser as per your urlRoutes.js usage
-    type: String,
+    required: false, // <--- CHANGE THIS: Device might be 'Unknown' or 'Desktop'
     trim: true,
-    default: 'Unknown'
+    default: 'Unknown' // Add a default for safety
   },
-  os: { // Added os as per your urlRoutes.js usage
+  browser: {
     type: String,
+    required: false, // <--- CHANGE THIS: Browser might be 'Unknown'
     trim: true,
-    default: 'Unknown'
+    default: 'Unknown' // Add a default for safety
+  },
+  os: {
+    type: String,
+    required: false, // <--- CHANGE THIS: OS might be 'Unknown'
+    trim: true,
+    default: 'Unknown' // Add a default for safety
   },
   timestamp: {
     type: Date,
-    default: Date.now, // Automatically set creation time
-    required: true,
+    default: Date.now,
+    required: true, // This should always be present
     index: true // Add an index for time-based queries
   },
 }, {
