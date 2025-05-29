@@ -129,11 +129,12 @@ function getClientIP(req) {
 
 
 // MAIN REDIRECT ROUTE
+// MAIN REDIRECT ROUTE - FIXED VERSION
 router.get('/:shortId', async (req, res) => {
   const { shortId } = req.params;
-  console.log(`[${shortId}] Redirect request received.`); // Debug log at the very start
+  console.log(`[${shortId}] Redirect request received.`);
 
-  let url; // Declare url outside try/catch to be accessible in outer catch block
+  let url;
 
   try {
     url = await Url.findOne({ shortId });
@@ -143,78 +144,258 @@ router.get('/:shortId', async (req, res) => {
       return res.status(404).send("Not found");
     }
 
-    // Update click count
+    // Update click count first (this should always work)
     url.clicks++;
     await url.save();
-    console.log(`[${shortId}] Url.clicks updated to ${url.clicks}.`); // Debug log
+    console.log(`[${shortId}] Url.clicks updated to ${url.clicks}.`);
 
-    // Extract client information
+    // Extract client information with better defaults
     const ip = getClientIP(req);
-    const ua = uaParser(req.headers['user-agent'] || '');
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const ua = uaParser(userAgent);
 
-    console.log(`[${shortId}] Client IP: ${ip}, User-Agent: ${req.headers['user-agent'] || 'N/A'}`); // Debug log
+    console.log(`[${shortId}] Client IP: ${ip}, User-Agent: ${userAgent}`);
 
     // Get geolocation (with fallback)
     let geo = { country: 'Unknown', city: 'Unknown' };
     try {
       geo = await getGeoLocation(ip);
-      console.log(`[${shortId}] Geo lookup result:`, geo); // Debug log
+      console.log(`[${shortId}] Geo lookup result:`, geo);
     } catch (geoError) {
       console.warn(`[${shortId}] Geolocation helper failed:`, geoError.message);
-      // Keep geo as Unknown if getGeoLocation fails
     }
 
-    // Prepare click log data
+    // Prepare click log data with robust defaults and validation
     const clickLogData = {
-      shortId,
-      ip: ip || 'Unknown', // Ensure IP is always set, even if getClientIP returns null
+      shortId: shortId,
+      ip: ip && ip !== 'Unknown' ? ip : '127.0.0.1', // Fallback IP
       country: geo.country || 'Unknown',
       city: geo.city || 'Unknown',
-      device: ua.device?.type || 'Desktop', // Default to 'Desktop' if device type is not found
-      browser: ua.browser?.name || 'Unknown', // Default to 'Unknown' if browser name is not found
-      os: ua.os?.name || 'Unknown',       // Default to 'Unknown' if OS name is not found
+      device: (ua.device && ua.device.type) ? ua.device.type : 'Desktop',
+      browser: (ua.browser && ua.browser.name) ? ua.browser.name : 'Unknown',
+      os: (ua.os && ua.os.name) ? ua.os.name : 'Unknown',
       timestamp: new Date()
     };
 
-    console.log(`[${shortId}] Attempting to create ClickLog with data:`, clickLogData); // PRE-CREATE LOG
+    // Validate data before creation
+    if (!clickLogData.shortId || clickLogData.shortId.trim() === '') {
+      throw new Error('shortId is required for ClickLog');
+    }
 
-    // *** POTENTIAL ERROR AREA - TEMPORARILY REMOVED TRY...CATCH FOR DEBUGGING ***
-    // This will cause the server to crash if ClickLog.create fails, but will give you the exact error.
-    // REMEMBER TO REVERT THIS AFTER DEBUGGING!
-    const clickLog = await ClickLog.create(clickLogData);
-    console.log(`[${shortId}] Click log created successfully:`, clickLog._id); // POST-CREATE SUCCESS LOG
+    console.log(`[${shortId}] Attempting to create ClickLog with data:`, clickLogData);
 
-    // *** ORIGINAL TRY...CATCH BLOCK (COMMENTED OUT FOR DEBUGGING) ***
-    /*
+    // Create ClickLog with proper error handling
     try {
       const clickLog = await ClickLog.create(clickLogData);
-      console.log(`[${shortId}] Click log created successfully:`, clickLog._id); // Debug log
+      console.log(`[${shortId}] Click log created successfully:`, clickLog._id);
     } catch (logError) {
-      console.error(`[${shortId}] Failed to create click log:`, logError.message);
-      if (logError.code === 11000) { // MongoDB duplicate key error code
-        console.error(`[${shortId}] MongoDB Duplicate Key Error! Likely a unique index constraint violation. Key:`, logError.keyValue);
-      } else if (logError.name === 'ValidationError') { // Mongoose validation error
-        console.error(`[${shortId}] Mongoose Validation Error:`, logError.errors);
+      console.error(`[${shortId}] Failed to create click log:`, logError);
+      
+      // Handle specific MongoDB/Mongoose errors
+      if (logError.code === 11000) {
+        console.error(`[${shortId}] MongoDB Duplicate Key Error!`, {
+          keyValue: logError.keyValue,
+          keyPattern: logError.keyPattern
+        });
+      } else if (logError.name === 'ValidationError') {
+        console.error(`[${shortId}] Mongoose Validation Error:`, {
+          errors: Object.keys(logError.errors).map(key => ({
+            field: key,
+            message: logError.errors[key].message,
+            value: logError.errors[key].value
+          }))
+        });
+      } else if (logError.name === 'CastError') {
+        console.error(`[${shortId}] Mongoose Cast Error:`, {
+          path: logError.path,
+          value: logError.value,
+          kind: logError.kind
+        });
+      } else {
+        console.error(`[${shortId}] Unknown ClickLog creation error:`, {
+          name: logError.name,
+          message: logError.message,
+          stack: logError.stack
+        });
       }
-      // Don't fail the redirect if logging fails
+
+      // Try creating a minimal ClickLog as fallback
+      try {
+        console.log(`[${shortId}] Attempting fallback ClickLog creation...`);
+        const fallbackData = {
+          shortId: shortId,
+          ip: '127.0.0.1',
+          country: 'Unknown',
+          city: 'Unknown',
+          device: 'Desktop',
+          browser: 'Unknown',
+          os: 'Unknown',
+          timestamp: new Date()
+        };
+        
+        const fallbackLog = await ClickLog.create(fallbackData);
+        console.log(`[${shortId}] Fallback click log created:`, fallbackLog._id);
+      } catch (fallbackError) {
+        console.error(`[${shortId}] Fallback ClickLog creation also failed:`, fallbackError);
+        // Don't fail the redirect - just log the error
+      }
     }
-    */
-    // *** END ORIGINAL TRY...CATCH BLOCK ***
 
-
-    console.log(`[${shortId}] Redirecting to: ${url.originalUrl}`); // Debug log
+    console.log(`[${shortId}] Redirecting to: ${url.originalUrl}`);
     res.redirect(url.originalUrl);
 
   } catch (err) {
-    console.error(`[${shortId}] Redirect error (unhandled ClickLog.create error, or other):`, err); // Catch all errors, including uncaught from ClickLog.create
-    // Try to redirect anyway if we can find the URL (using the 'url' variable declared outside)
+    console.error(`[${shortId}] Redirect error:`, err);
+    
+    // Try to redirect anyway if we have the URL
     if (url && url.originalUrl) {
       console.log(`[${shortId}] Fallback redirect to:`, url.originalUrl);
       return res.redirect(url.originalUrl);
     }
+    
     res.status(500).send("Server error");
   }
 });
+
+// IMPROVED getClientIP function
+function getClientIP(req) {
+  // Check multiple headers in order of preference
+  const xForwardedFor = req.headers['x-forwarded-for'];
+  if (xForwardedFor) {
+    const ips = xForwardedFor.split(',').map(ip => ip.trim());
+    // Return first non-private IP, or first IP if all are private
+    for (const ip of ips) {
+      if (!isPrivateIP(ip)) {
+        return ip;
+      }
+    }
+    return ips[0]; // Return first IP if all are private
+  }
+
+  // Try other headers
+  const xRealIp = req.headers['x-real-ip'];
+  if (xRealIp && !isPrivateIP(xRealIp)) {
+    return xRealIp;
+  }
+
+  const cfConnectingIp = req.headers['cf-connecting-ip']; // Cloudflare
+  if (cfConnectingIp && !isPrivateIP(cfConnectingIp)) {
+    return cfConnectingIp;
+  }
+
+  // Fallback to connection IP
+  const connectionIP = req.connection?.remoteAddress || 
+                     req.socket?.remoteAddress || 
+                     req.ip;
+
+  return connectionIP || '127.0.0.1';
+}
+
+// Helper function to check if IP is private
+function isPrivateIP(ip) {
+  if (!ip) return true;
+  
+  // Remove IPv6 prefix if present
+  const cleanIP = ip.replace(/^::ffff:/, '');
+  
+  const privateRanges = [
+    /^10\./,                    // 10.0.0.0/8
+    /^192\.168\./,              // 192.168.0.0/16
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./, // 172.16.0.0/12
+    /^127\./,                   // 127.0.0.0/8 (localhost)
+    /^::1$/,                    // IPv6 localhost
+    /^fc00:/,                   // IPv6 unique local addresses
+    /^fe80:/                    // IPv6 link-local addresses
+  ];
+
+  return privateRanges.some(range => range.test(cleanIP));
+}
+
+// IMPROVED getGeoLocation function with better error handling
+async function getGeoLocation(ip) {
+  if (!ip || isPrivateIP(ip)) {
+    return { country: 'Private Network', city: 'Local' };
+  }
+
+  const cacheKey = `geo-${ip}`;
+  const cachedLocation = ipCache.get(cacheKey);
+  if (cachedLocation && cachedLocation.country && cachedLocation.city) {
+    return cachedLocation;
+  }
+
+  // Try geoip-lite first (fastest, local database)
+  try {
+    const geo = geoip.lookup(ip);
+    if (geo && geo.country) {
+      const location = { 
+        country: geo.country, 
+        city: geo.city || 'Unknown' 
+      };
+      ipCache.set(cacheKey, location);
+      setTimeout(() => ipCache.delete(cacheKey), CACHE_TTL);
+      return location;
+    }
+  } catch (error) {
+    console.warn(`GeoIP-lite lookup failed for ${ip}:`, error.message);
+  }
+
+  // Fallback to external services with improved error handling
+  for (const [serviceName, service] of Object.entries(GEO_SERVICES)) {
+    if (serviceName === 'GEOLITE' && !service.token) {
+      continue; // Skip if no token
+    }
+    if (serviceName === 'IPINFO' && !service.token) {
+      continue; // Skip if no token
+    }
+
+    try {
+      const config = {
+        timeout: 5000, // Increased timeout
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'URLShortener/1.0'
+        }
+      };
+
+      if (service.token) {
+        if (serviceName === 'IPINFO') {
+          config.headers['Authorization'] = `Bearer ${service.token}`;
+        } else {
+          config.params = { token: service.token };
+        }
+      }
+
+      const response = await axios.get(service.endpoint(ip), config);
+
+      // Validate response
+      if (!response.data) {
+        throw new Error('Empty response data');
+      }
+
+      if (response.data.status === 'fail') {
+        throw new Error(response.data.message || 'API returned failure status');
+      }
+
+      const location = service.parser(response.data);
+      
+      // Validate parsed location
+      if (!location.country || location.country === 'Unknown') {
+        throw new Error('Invalid location data from service');
+      }
+
+      ipCache.set(cacheKey, location);
+      setTimeout(() => ipCache.delete(cacheKey), CACHE_TTL);
+      return location;
+
+    } catch (error) {
+      console.warn(`[${serviceName}] Geolocation failed for ${ip}:`, error.message);
+      continue; // Try next service
+    }
+  }
+
+  console.warn(`All geolocation services failed for IP: ${ip}`);
+  return { country: 'Unknown', city: 'Unknown' };
+}
 
 // POST /api/urls/shorten
 router.post('/shorten', async (req, res) => {
